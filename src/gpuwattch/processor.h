@@ -53,6 +53,7 @@
 #include "memoryctrl.h"
 #include "noc.h"
 #include "sharedcache.h"
+#include <fstream>
 
 class Processor : public Component {
  public:
@@ -78,8 +79,8 @@ class Processor : public Component {
   Component core, l2, l3, l1dir, l2dir, noc, mcs, cc, nius, pcies,
       flashcontrollers;
   int numCore, numL2, numL3, numNOC, numL1Dir, numL2Dir;
-  Processor(ParseXML *XML_interface);
-  void compute();
+  Processor(ParseXML *XML_interface,unsigned i);
+  void compute(bool);
   void set_proc_param();
   void visualizer_print(gzFile visualizer_file);
   void displayEnergy(uint32_t indent = 0, int plevel = 100,
@@ -88,8 +89,90 @@ class Processor : public Component {
   void displayInterconnectType(int interconnect_type_, uint32_t indent = 0);
   double l2_power;
   double idle_core_power;
+  unsigned idx;
+  double get_const_dynamic_power(bool x) {
+    double constpart = 0;
+    if(x) {
+        constpart += (mc->frontend->power.readOp.dynamic * 0.1 *
+                      mc->frontend->mcp.clockRate * mc->frontend->mcp.num_mcs *
+                      mc->frontend->mcp.executionTime);
+        constpart +=
+                (mc->transecEngine->power.readOp.dynamic * 0.1 *
+                 mc->transecEngine->mcp.clockRate * mc->transecEngine->mcp.num_mcs *
+                 mc->transecEngine->mcp.executionTime);
+        constpart += (mc->PHY->power.readOp.dynamic * 0.1 * mc->PHY->mcp.clockRate *
+                      mc->PHY->mcp.num_mcs * mc->PHY->mcp.executionTime);
+    }
+    else {
+        constpart +=
+                (cores[0]->exu->exeu->base_energy / cores[0]->exu->exeu->clockRate) *
+                (cores[0]->exu->rf_fu_clockRate / cores[0]->exu->clockRate);
+        constpart +=
+                (cores[0]->exu->mul->base_energy / cores[0]->exu->mul->clockRate);
+        constpart +=
+                (cores[0]->exu->fp_u->base_energy / cores[0]->exu->fp_u->clockRate);
+    }
+//      std::ofstream file_freqs;
+//      file_freqs.open(" ./../../../DATA/file_freqs.txt",std::ios::app);
+//      file_freqs << idx<<"\t"<<  mc->frontend->mcp.clockRate
+//      <<"\t"<<mc->frontend->mcp.num_mcs
+//      <<"\t"<<mc->frontend->mcp.executionTime
+//      <<"\t"<<mc->frontend->mcp.clockRate * mc->frontend->mcp.num_mcs *
+//              mc->frontend->mcp.executionTime<<"\n"
+//
+//      <<"\t"<<mc->PHY->mcp.clockRate
+//      <<"\t"<< mc->PHY->mcp.num_mcs
+//      <<"\t"<<mc->PHY->mcp.executionTime
+//      <<"\t"<<mc->PHY->mcp.clockRate *
+//              mc->PHY->mcp.num_mcs * mc->PHY->mcp.executionTime<<"\n"
+//
+//      <<"\t"<<mc->transecEngine->mcp.clockRate
+//      <<"\t"<<mc->transecEngine->mcp.num_mcs
+//      <<"\t"<<mc->transecEngine->mcp.executionTime
+//      <<"\t"<<(mc->PHY->power.readOp.dynamic * 0.1 * mc->PHY->mcp.clockRate *
+//               mc->PHY->mcp.num_mcs * mc->PHY->mcp.executionTime)<<"\n"
+//
+//      <<"\t"<<cores[0]->exu->exeu->clockRate
+//      <<"\t"<<cores[0]->exu->rf_fu_clockRate
+//              <<"\t"<<cores[0]->exu->clockRate
+//              <<"\t"<< cores[0]->exu->exeu->clockRate * (cores[0]->exu->rf_fu_clockRate / cores[0]->exu->clockRate)<<"\n"
+//
+//                      <<"\t"<<cores[0]->exu->mul->clockRate<<"\n"
+//                      <<"\t"<< cores[0]->exu->fp_u->clockRate<<"\n";
+//      file_freqs.close();
+//      std::ofstream file;
+//      char* path1 =  getenv("DATA_PATH");
+//      char* path2 = "/DATA/total_inst.txt";
+//      char*  path = strcat(path1,path2);
+//      file.open(" ./../../../DATA/leakage/const.txt",std::ios::app);
+//      file<<constpart<<"\t"<<(mc->frontend->power.readOp.dynamic * 0.1 *
+//                              mc->frontend->mcp.clockRate * mc->frontend->mcp.num_mcs *
+//                              mc->frontend->mcp.executionTime)/(cores[0]->executionTime)
+//          <<"\t"<<(mc->transecEngine->power.readOp.dynamic * 0.1 *
+//                   mc->transecEngine->mcp.clockRate * mc->transecEngine->mcp.num_mcs *
+//                   mc->transecEngine->mcp.executionTime)/(cores[0]->executionTime)
+//          <<"\t"<<(mc->PHY->power.readOp.dynamic * 0.1 * mc->PHY->mcp.clockRate *
+//                   mc->PHY->mcp.num_mcs * mc->PHY->mcp.executionTime)/(cores[0]->executionTime)
+//          <<"\t" <<(cores[0]->exu->mul->base_energy / cores[0]->exu->mul->clockRate)/(cores[0]->executionTime)
+//          <<"\t" <<(cores[0]->exu->fp_u->base_energy / cores[0]->exu->fp_u->clockRate)/(cores[0]->executionTime)
+//          <<"\t"<<cores[0]->exu->mul->base_energy
+//          <<"\t"<<cores[0]->exu->fp_u->base_energy<<std::endl;
+//      file.close();
+    return constpart;
+  }
+  double get_const_dynamic_power_per_sm() {
+    double constpart = 0;
+    constpart +=
+        (cores[0]->exu->exeu->base_energy / cores[0]->exu->exeu->clockRate) *
+        (cores[0]->exu->rf_fu_clockRate / cores[0]->exu->clockRate);
+    constpart +=
+        (cores[0]->exu->mul->base_energy / cores[0]->exu->mul->clockRate);
+    constpart +=
+        (cores[0]->exu->fp_u->base_energy / cores[0]->exu->fp_u->clockRate);
+    return constpart;
+  }
 
-  double get_const_dynamic_power() {
+  double get_const_dynamic_power_mem_only() {
     double constpart = 0;
     constpart += (mc->frontend->power.readOp.dynamic * 0.1 *
                   mc->frontend->mcp.clockRate * mc->frontend->mcp.num_mcs *
@@ -100,15 +183,9 @@ class Processor : public Component {
          mc->transecEngine->mcp.executionTime);
     constpart += (mc->PHY->power.readOp.dynamic * 0.1 * mc->PHY->mcp.clockRate *
                   mc->PHY->mcp.num_mcs * mc->PHY->mcp.executionTime);
-    constpart +=
-        (cores[0]->exu->exeu->base_energy / cores[0]->exu->exeu->clockRate) *
-        (cores[0]->exu->rf_fu_clockRate / cores[0]->exu->clockRate);
-    constpart +=
-        (cores[0]->exu->mul->base_energy / cores[0]->exu->mul->clockRate);
-    constpart +=
-        (cores[0]->exu->fp_u->base_energy / cores[0]->exu->fp_u->clockRate);
     return constpart;
   }
+
 #define COALESCE_SCALE 1
   double get_coefficient_readcoalescing() {
     double value = 0;

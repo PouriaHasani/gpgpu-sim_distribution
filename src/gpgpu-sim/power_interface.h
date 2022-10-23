@@ -38,12 +38,126 @@
 void init_mcpat(const gpgpu_sim_config &config,
                 class gpgpu_sim_wrapper *wrapper, unsigned stat_sample_freq,
                 unsigned tot_inst, unsigned inst);
-void mcpat_cycle(const gpgpu_sim_config &config,
+bool mcpat_cycle(const gpgpu_sim_config &config,
                  const shader_core_config *shdr_config,
                  class gpgpu_sim_wrapper *wrapper,
                  class power_stat_t *power_stats, unsigned stat_sample_freq,
                  unsigned tot_cycle, unsigned cycle, unsigned tot_inst,
-                 unsigned inst);
+                 unsigned inst,class simt_core_cluster **,int,float*,double*,float *,double &Total_exe_time,double *new_cluster_freq,double *pre_cluster_freq,double p_model_freq
+                 ,int gpu_stall_dramfull,bool &first);
 void mcpat_reset_perf_count(class gpgpu_sim_wrapper *wrapper);
+void mcpat_cycle_power_calculation(class Chromosome *chromosome,
+                                    const class gpgpu_sim_wrapper *wrapper,
+                                     double* base_cluster_freq);
+
 
 #endif /* POWER_INTERFACE_H_ */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -359,7 +359,7 @@ class scheduler_unit {  // this can be copied freely, so can be used in std
   // all the derived schedulers.  The scheduler's behaviour can be
   // modified by changing the contents of the m_next_cycle_prioritized_warps
   // list.
-  void cycle();
+  void cycle(unsigned &waiting_warps,unsigned &sch_cycles,unsigned &sch_valid_inst, unsigned  &sch_ready_inst);
 
   // These are some common ordering fucntions that the
   // higher order schedulers can take advantage of
@@ -1882,7 +1882,7 @@ class shader_core_ctx : public core_t {
 
   // used by simt_core_cluster:
   // modifiers
-  void cycle();
+  void cycle(unsigned &waiting_warps,unsigned &sch_cycles,unsigned &sch_valid_inst, unsigned &sch_ready_inst);
   void reinit(unsigned start_thread, unsigned end_thread,
               bool reset_not_completed);
   void issue_block2core(class kernel_info_t &kernel);
@@ -1902,6 +1902,7 @@ class shader_core_ctx : public core_t {
   }
 
   // accessors
+  unsigned number_waiting_warps;
   bool fetch_unit_response_buffer_full() const;
   bool ldst_unit_response_buffer_full() const;
   unsigned get_not_completed() const { return m_not_completed; }
@@ -2128,7 +2129,7 @@ class shader_core_ctx : public core_t {
 
   void decode();
 
-  void issue();
+  void issue(unsigned & waiting_warps,unsigned &sch_cycles,unsigned &sch_valid_inst, unsigned &sch_ready_inst);
   friend class scheduler_unit;  // this is needed to use private issue warp.
   friend class TwoLevelScheduler;
   friend class LooseRoundRobbinScheduler;
@@ -2304,7 +2305,7 @@ class simt_core_cluster {
                     const memory_config *mem_config, shader_core_stats *stats,
                     memory_stats_t *mstats);
 
-  void core_cycle();
+  void core_cycle(unsigned &waiting_warps,unsigned &sch_cycles,unsigned &sch_valid_inst, unsigned &sch_ready_inst);
   void icnt_cycle();
 
   void reinit();
@@ -2329,6 +2330,7 @@ class simt_core_cluster {
   void print_not_completed(FILE *fp) const;
   unsigned get_n_active_cta() const;
   unsigned get_n_active_sms() const;
+  shader_core_stats* get_m_stats(){return m_stats;}
   gpgpu_sim *get_gpu() { return m_gpu; }
 
   void display_pipeline(unsigned sid, FILE *fout, int print_mem, int mask);
@@ -2345,7 +2347,12 @@ class simt_core_cluster {
   float get_current_occupancy(unsigned long long &active,
                               unsigned long long &total) const;
   virtual void create_shader_core_ctx() = 0;
-
+  float occupancy_per_sms;
+  unsigned waiting_warps;
+  unsigned sch_cycles;
+  unsigned sch_valid_inst;
+  unsigned  sch_ready_inst;
+  unsigned kernel_done;
  protected:
   unsigned m_cluster_id;
   gpgpu_sim *m_gpu;
@@ -2353,6 +2360,7 @@ class simt_core_cluster {
   shader_core_stats *m_stats;
   memory_stats_t *m_memory_stats;
   shader_core_ctx **m_core;
+
   const memory_config *m_mem_config;
 
   unsigned m_cta_issue_next_core;

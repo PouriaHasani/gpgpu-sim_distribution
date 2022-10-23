@@ -203,6 +203,8 @@ gpgpu_t::gpgpu_t(const gpgpu_functional_sim_config &config, gpgpu_context *ctx)
 
   gpu_sim_cycle = 0;
   gpu_tot_sim_cycle = 0;
+  p_model_cycle = 0;
+  p_model_tot_cycle = 0;
 }
 
 address_type line_size_based_tag_func(new_addr_type address,

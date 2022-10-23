@@ -47,6 +47,7 @@
 #include "const.h"
 #include "io.h"
 #include "parameter.h"
+#include <fstream>
 //#include "globalvar.h"
 // double exClockRate;
 //*********************
@@ -3268,11 +3269,12 @@ void InstFetchU::computeEnergy(bool is_tdp) {
     rt_power.reset();
     icache.rt_power.reset();  // Jingwen
     // init stats for Runtime Dynamic (RTP)
-    // cout<< "****>>>>Icache stats:"<<endl;
-    // cout<<"Read accesses: "<< XML->sys.core[ithCore].icache.read_accesses <<
-    // " Read misses: "<<XML->sys.core[ithCore].icache.read_misses<<endl;
+     cout<< "****>>>>Icache stats:"<<endl;
+     cout<<"Read accesses: "<< XML->sys.core[ithCore].icache.read_accesses <<
+     " Read misses: "<<XML->sys.core[ithCore].icache.read_misses<<endl;
     icache.caches->stats_t.readAc.access =
         XML->sys.core[ithCore].icache.read_accesses;
+    printf("\nithcore %d",ithCore);
     icache.caches->stats_t.readAc.miss =
         XML->sys.core[ithCore].icache.read_misses;
     // cout<<endl<<"inside mcpat read access=
@@ -3363,8 +3365,16 @@ void InstFetchU::computeEnergy(bool is_tdp) {
   IB->power_t.readOp.dynamic +=
       IB->local_result.power.readOp.dynamic * IB->stats_t.readAc.access +
       IB->stats_t.writeAc.access * IB->local_result.power.writeOp.dynamic;
-  // cout << "IB power: "<<IB->power_t.readOp.dynamic<<endl;
+
+
+
+      // cout << "IB power: "<<IB->power_t.readOp.dynamic<<endl;
   if (coredynp.predictionW > 0) {
+//    std::ofstream file_IB;
+//    file_IB.open("./../../../DATA/IB.txt",std::ios::app);
+//    file_IB<<BTB->local_result.power.readOp.dynamic<<"\t"<<BTB->stats_t.readAc.access<<"\t"
+//            <<BTB->stats_t.writeAc.access<<"\t"<<BTB->local_result.power.writeOp.dynamic<<std::endl;
+//    file_IB.close();
     BTB->power_t.readOp.dynamic +=
         BTB->local_result.power.readOp.dynamic * BTB->stats_t.readAc.access +
         BTB->stats_t.writeAc.access * BTB->local_result.power.writeOp.dynamic;
@@ -5973,13 +5983,13 @@ void EXECU::displayEnergy(uint32_t indent, int plevel, bool is_tdp) {
 }
 
 // Jingwen
-void Core::compute() {
+void Core::compute(bool loop) {
   // power_point_product_masks
   double pppm_t[4] = {1, 1, 1, 1};
   double rtp_pipeline_coe;
   double num_units = 4.0;
   Pipeline_energy = 0;
-
+//printf("\nithcore is: %d number of the core %d",ithCore,XML->sys.number_of_cores);
   // Set pipeline duty cycle for this inteval
   coredynp.pipeline_duty_cycle = XML->sys.core[ithCore].pipeline_duty_cycle;
   rt_power.reset();
@@ -6011,27 +6021,38 @@ void Core::compute() {
            coredynp.num_pipelines / num_units);
 
   if (ifu->exist) {
-    Pipeline_energy += corepipe->power.readOp.dynamic *
-                       (coredynp.num_pipelines * rtp_pipeline_coe / num_units);
+//    if(loop)
+
+      Pipeline_energy += corepipe->power.readOp.dynamic *
+                         (coredynp.num_pipelines * rtp_pipeline_coe / num_units);
+//      FILE * file_final;
+//      file_final = fopen("./../../../DATA/CORE_PIP_ifu.txt","a");
+//      fprintf(file_final,"\n%2.10lf %2.10lf %d %2.10lf %2.10lf",Pipeline_energy,corepipe->power.readOp.dynamic,\
+//                coredynp.num_pipelines,rtp_pipeline_coe,num_units);
+//      fflush(file_final);
+//      fclose(file_final);
     ifu->rt_power = ifu->rt_power + corepipe->power * pppm_t;
     rt_power = rt_power + ifu->rt_power;
   }
 
   if (lsu->exist) {
-    Pipeline_energy += corepipe->power.readOp.dynamic *
-                       (coredynp.num_pipelines * rtp_pipeline_coe / num_units);
+//    if(loop)
+      Pipeline_energy += corepipe->power.readOp.dynamic *
+                         (coredynp.num_pipelines * rtp_pipeline_coe / num_units);
     lsu->rt_power = lsu->rt_power + corepipe->power * pppm_t;
     rt_power = rt_power + lsu->rt_power;
   }
   if (exu->exist) {
-    Pipeline_energy += corepipe->power.readOp.dynamic *
-                       (coredynp.num_pipelines * rtp_pipeline_coe / num_units);
+//    if(loop)
+      Pipeline_energy += corepipe->power.readOp.dynamic *
+                         (coredynp.num_pipelines * rtp_pipeline_coe / num_units);
     exu->rt_power = exu->rt_power + corepipe->power * pppm_t;
     rt_power = rt_power + exu->rt_power;
   }
   if (mmu->exist) {
-    Pipeline_energy += corepipe->power.readOp.dynamic *
-                       (coredynp.num_pipelines * rtp_pipeline_coe / num_units);
+//    if(loop)
+      Pipeline_energy += corepipe->power.readOp.dynamic *
+                         (coredynp.num_pipelines * rtp_pipeline_coe / num_units);
     mmu->rt_power = mmu->rt_power + corepipe->power * pppm_t;
     rt_power = rt_power + mmu->rt_power;
   }
@@ -6086,6 +6107,7 @@ void Core::computeEnergy(bool is_tdp) {
       Pipeline_energy +=
           corepipe->power.readOp.dynamic *
           (coredynp.num_pipelines * rtp_pipeline_coe / num_units);
+
       set_pppm(pppm_t,
                coredynp.num_pipelines / num_units * coredynp.IFU_duty_cycle,
                coredynp.num_pipelines / num_units,
@@ -6106,6 +6128,7 @@ void Core::computeEnergy(bool is_tdp) {
       Pipeline_energy +=
           corepipe->power.readOp.dynamic *
           (coredynp.num_pipelines * rtp_pipeline_coe / num_units);
+
       set_pppm(pppm_t,
                coredynp.num_pipelines / num_units * coredynp.LSU_duty_cycle,
                coredynp.num_pipelines / num_units,

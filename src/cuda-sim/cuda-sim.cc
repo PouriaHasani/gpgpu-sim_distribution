@@ -37,6 +37,7 @@ typedef void *yyscan_t;
 #include <map>
 #include <set>
 #include <sstream>
+#include <fstream>
 #include "../../libcuda/gpgpu_context.h"
 #include "../abstract_hardware_model.h"
 #include "../gpgpu-sim/gpu-sim.h"
@@ -319,10 +320,12 @@ void function_info::ptx_assemble() {
   }
   gpgpu_ctx->func_sim->g_assemble_code_next_pc = PC;
   for (unsigned ii = 0; ii < n;
-       ii += m_instr_mem[ii]->inst_size()) {  // handle branch instructions
+       ii += m_instr_mem[ii]->inst_size()) {
+    // handle branch instructions
     ptx_instruction *pI = m_instr_mem[ii];
     if (pI->get_opcode() == BRA_OP || pI->get_opcode() == BREAKADDR_OP ||
         pI->get_opcode() == CALLP_OP) {
+
       operand_info &target = pI->dst();  // get operand, e.g. target name
       if (labels.find(target.name()) == labels.end()) {
         printf(
